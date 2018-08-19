@@ -28,47 +28,50 @@ import "@thetta/core/contracts/utils/UtilsLib.sol";
 
 contract RobonomicaCore is DaoBase {
 	address admin;
-	address[] chiefs;
+	address[] cookers;
 	StdDaoToken roboToken;
 	StdDaoToken repToken;
-	mapping (uint => (uint =>Order[])) public orders; // Day number => order number => order
-	mapping (uint => uint) public orderCount; // Day number => order count
- 	Dish[] dishes;
-	mapping (uint => (string => DishState)) public dishStates; // Day number => 
+	mapping (uint => Order) public orders; // order number => order
+	uint public ordersCount;
+
+	// mapping (uint => Cooker) public cookers; // cooker number => cooker
+	uint public cookersCount;
+
+	// mapping (uint => Lunch) public potentialCookers;
+	// uint public potentialCookersCount;
+
+	mapping (uint => Lunch) public lunches; // lunch number => lunch
+	mapping (uint => OrderState) public lunchStates;
+	uint public lunchesCount;
+
+	// mapping (uint => Lunch) public potentialLunches;
+	// uint public potentialLunchesCount;
 
 	uint startDate;
 
 	struct Order {
 		OrderState state;
-		Dish[] dishes;
+		Lunch lunch;
 		address customer;
-
 	}
 
-	struct Dish {
+	struct Lunch {
 		string name;
+		uint id;
 		uint price;
 		address cooker;
-	}
-
-	enum DishState {
-		NotExist,
-		Gotten,
-		Cooking,
-		Ready,
-		Canceled
 	}
 
 	enum OrderState {
 		NotCreated,
 		Canceled,
 		Created,
-	//	Cooking, -- computes in getOrderStatus
-	//	Delivering, computes in getOrderStatus
+		Cooking, // computes in geOrderStatus
+		Delivering, // computes in getOrderStatus
+		WaitingForReceive,
 		Received,
 		Finished
 	}
-
 
 	modifier adminOnly(){
 		require(msg.sender==admin); 
@@ -80,89 +83,101 @@ contract RobonomicaCore is DaoBase {
 		roboToken = _daoStorage.getTokenAtIndex(0);
 		repToken = _daoStorage.getTokenAtIndex(1);
 		startDate = now;
-		DaoBaseLib.issueTokens(_daoStorage, repToken, admin, 1000);
-	}
-
-	function getDayNumber() public returns(uint) {
-		return (now - startDate)/(24*3600*1000);
 	}
 
 // ------------ CUSTOMER CONTROLS ------------
-	function createOrder(string[] _dishNames) public {
-		Dishes[] orderedDishes;
-		for(uint i=0; i<_dishNames.length; i++){
-			orderedDishes.push(getDishByName(_dishNames[i]));
+	function createOrder(uint _lunchId) public payable returns(uint){
+		Lunch lunch = lunches[_lunchId];
+		require(msg.value==lunch.price);
+		orders[ordersCount] = Order(OrderState.Created, lunch, msg.sender);
+		ordersCount++;
+	}
+
+	function getOrderStatus(uint _orderId) public returns(OrderState) {
+		uint lunchId = orders[_orderId].lunch.id;
+		if(lunchStates[lunchId]!=OrderState.NotCreated){
+			return lunchStates[lunchId];
 		}
-		
-		uint thisDay = getDayNumber();
-		orders[thisDay].push(Order(OrderState.Gotten, orderedDishes, msg.sender));
+		return orders[_orderId].state;
 	}
 
-	function getDishByName(string _name) public returns(Dish) {
-		Dish returnedDish;
-		for(uint i=0; i<dishes.length; i++){
-			if(Dish[i].name==_name){
-				return Dish;
-			}
-		}
-		revert(); // of not found
+	function cancelOrder(uint _orderId) public {
+		Order order = orders[_orderId];
+		require(order.customer==msg.sender);
+		require(order.state==OrderState.Created);
+		order.state == OrderState.Canceled;
+		msg.sender.transfer(order.lunch.price);
 	}
 
-	function getAllDishes() public returns(Dish[]){
-		return dishes;
+	function rateLunch(uint _orderId, uint _rate) public {
+		Order order = orders[_orderId];
+		require(order.customer==msg.sender);
+		require(order.state==OrderState.Received);
+		address cooker = order.lunch.cooker;
+		DaoBaseLib.issueTokens(daoStorage, repToken, cooker, _rate); // TODO: change _rate to rateCooker(_rate)
+		order.state==OrderState.Finished;
 	}
 
-	function getOrderStatus() public {
-
+	function addNewLunch(string _name, uint _price, uint _cookerId) public { // if 30% votes => add
+		address cooker = cookers[_cookerId];
+		lunches[lunchesCount] = Lunch(_name, lunchesCount, _price, cooker);
+		lunchesCount++;
 	}
 
-	function getMyOrderStatus() public {}
-	function cancelOrder() public {}
-	function rateDishQuality() public {}
-	function voteForHireChief() public {} // if 30% votes => hire, exist permanenlty
-	function voteForFireChief() public {}// if 30% votes => fire, exist permanenlty
-	function voteForChangeAdmin() public {} // if 30% votes => hire, exist permanenlty
-	function createVotingForNewDish() public {} // if 30% votes => add
-	function voteForNewDish() public {} // if 30% votes => add
-	function refund() public {} // if not cooking/canceled by chief
-	function getMyOrder() public {} // fro smartLock
+	function refund(uint _orderId) public { // if not cooking/canceled by cooker
+		Order order = orders[_orderId];
+		require(order.customer==msg.sender);
+		require(order.state==OrderState.Cooking);
+		// TODO: require > 8 hours in cooking state
+		order.state = OrderState.Canceled;
+		order.customer.transfer(order.lunch.price);
+		DaoBaseLib.burnTokens(daoStorage, repToken, order.lunch.cooker, 1000);
+	}
 
-	function voteForAdditionalFundsRequest() public {}
+	function getMyOrder(uint _orderId) public { // for smartLock
+		Order order = orders[_orderId];
+		require(order.customer==msg.sender);
+		require(order.state==OrderState.WaitingForReceive);
+		order.state==OrderState.Received;
+	}
 
 // ------------ CHIEF CONTROLS ------------
-	function getAllOrders() public {}
-	function setThatDishIsCooking() public {}
-	function setThatAllDishesAreDelivering() public {}
-	function setThatDishIsCanceled() public {}
+	function getAllOpenedOrders() public returns(uint[]) {
+		uint[] openedOrders;
+		for(uint i=0; i<ordersCount; i++){
+			if(orders[i].state==OrderState.Created){
+				openedOrders.push(i);
+			}
+		}
+		return openedOrders;
+	}
 
+	function setThatLunchIsCooking(uint _lunchId) public {
+		lunchStates[_lunchId]==OrderState.Cooking;
+	}
+
+	function setThatLunchIsDelivering(uint _lunchId) public {
+		lunchStates[_lunchId]==OrderState.Delivering;
+	}
+
+	function setThatLunchIsWaitingForReceive(uint _lunchId) public {
+		lunchStates[_lunchId]==OrderState.WaitingForReceive;
+	}
+
+	function setThatLunchIsCanceled(uint _lunchId) public {
+		lunchStates[_lunchId]==OrderState.Canceled;
+	}
 
 // ------------ ADMIN CONTROLS ------------
-	function requestAdditionalFunds() public {}
-
-// ------------ DISHES MANAGEMENT ------------
-	function addNewDish(string _name, uint _price) public {
-		// require msg.sender is chief;
-		// require _name is unique
-		dishes.push(Dish(_name, _price, msg.sender));
-	}
-
-	function removeDish(string _name, uint _price) public {
-		// require msg.sender is chief;
-		// removeDishFromArray(_name);
-	}	
-
-	function changeDishPrice(string _name, uint _price) public {
-		// require msg.sender is chief;
-	}
-
+	// function requestAdditionalFunds() public {}
 
 // ------------ DIRECT MANAGEMENT ------------
-	function setChief(address _chief) public {
-		chiefs.push(_chief);
+	function setChief(address _cooker) public {
+		cookers.push(_cooker);
 	}
 
-	function fireChief(address _chief) public {
-		UtilsLib.removeAddressFromArray(chiefs, _chief);
+	function fireChief(address _cooker) public {
+		UtilsLib.removeAddressFromArray(cookers, _cooker);
 	}	
 
 	function changeAdmin(address _admin) public {
