@@ -6,6 +6,7 @@ const GenericProposal = artifacts.require("GenericProposal");
 const InformalProposal = artifacts.require("InformalProposal");
 const StdDaoToken = artifacts.require("StdDaoToken");
 const DaoBaseAuto = artifacts.require("DaoBaseAuto");
+const DaoBase = artifacts.require("DaoBase");
 const RobonomicaCore = artifacts.require("RobonomicaCore");
 
 contract('RobonomicaCore functional', (accounts) => {
@@ -22,12 +23,14 @@ contract('RobonomicaCore functional', (accounts) => {
 	let store;
 	let informalProposal;
 	let stdDaoToken;
+	let daoBase;
 
 	beforeEach(async () => {
 		token = await StdDaoToken.new('roboToken', 'ROBO', 18, true, true, 1000000000);
 		repToken = await StdDaoToken.new('repToken', 'REP', 18, true, true, 1000000000);
 		store = await DaoStorage.new([token.address, repToken.address]);
-		robonomicaCore = await RobonomicaCore.new(store.address);
+		daoBase = await DaoBase.new(store.address);
+		robonomicaCore = await RobonomicaCore.new(daoBase.address, token.address, repToken.address);
 		await token.transferOwnership(robonomicaCore.address);
 		await repToken.transferOwnership(robonomicaCore.address);
 		await store.transferOwnership(robonomicaCore.address);
