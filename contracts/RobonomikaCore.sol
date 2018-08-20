@@ -12,24 +12,18 @@ contract RobonomicaCore is DaoClient {
 	address[] cookers;
 	StdDaoToken roboToken;
 	StdDaoToken repToken;
-	mapping (uint => Order) public orders; // order number => order
-	uint public ordersCount;
+	
 	uint feePercent = 10;
 
-	// mapping (uint => Cooker) public cookers; // cooker number => cooker
+	uint public ordersCount;
+	uint public lunchesCount;
 	uint public cookersCount;
 
-	mapping (address => uint) public cookerRegisrty; // cooker->date
-	// uint public cookerRegisrtyCount;
-
+	mapping (uint => Order) public orders; // order number => order
 	mapping (uint => Lunch) public lunches; // lunch number => lunch
-	mapping (uint => OrderState) public lunchStates;
-	uint public lunchesCount;
-
+	mapping (address => uint) public cookerRegisrty; // cooker->date
 	mapping (address => bool) public approvedCookers; // for admin
-	// mapping (uint => Lunch) public potentialLunches;
-	// uint public potentialLunchesCount;
-
+	
 	uint startDate;
 
 	event OrderIsDelivered(uint _orderId);
@@ -94,15 +88,6 @@ contract RobonomicaCore is DaoClient {
 
 	function getOrderStatus(uint _orderId) public returns(OrderState) {
 		uint lunchId = orders[_orderId].lunch.id;
-
-		if(orders[_orderId].state==OrderState.Finished){
-			return OrderState.Finished;
-		}
-
-		if(lunchStates[lunchId]!=OrderState.NotCreated){
-			return lunchStates[lunchId];
-		}
-
 		return orders[_orderId].state;
 	}
 
@@ -175,22 +160,11 @@ contract RobonomicaCore is DaoClient {
 		lunchesCount++;
 	}
 
-	function refund(uint _orderId) public { // if not cooking/canceled by cooker
-		Order order = orders[_orderId];
-		require(order.customer==msg.sender);
-		require(order.state==OrderState.Cooking);
-		// TODO: require > 8 hours in cooking state
-		order.state = OrderState.Canceled;
-		order.customer.transfer(order.lunch.price);
-		dao.burnTokens(repToken, order.lunch.cooker, 1000);
-	}
-
 	function getMyOrder(uint _orderId) public { // for smartLock
 		Order order = orders[_orderId];
 		require(order.customer==msg.sender);
 		require(order.state==OrderState.Delivered);
 		order.state==OrderState.Open;
-		// emit open
 	}
 
 	function getLunchInfo(uint _lunchId) public returns(string name, uint price, address cooker) { // for smartLock
@@ -221,7 +195,6 @@ contract RobonomicaCore is DaoClient {
 	}
 
 // ------------ ADMIN CONTROLS ------------
-	// function requestAdditionalFunds() public {}
 	function approveCooker(address _cooker) public adminOnly{
 		require(cookerRegisrty[_cooker]-now<10 days);
 		approvedCookers[_cooker] = true;
