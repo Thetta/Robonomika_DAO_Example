@@ -8,8 +8,8 @@ import "./Robonomika.sol";
 
 contract RobonomikaWithUnpackers is Robonomika {
 
-	constructor(IDaoBase _dao, address _roboToken, address _repToken) public 
-		Robonomika(_dao, _roboToken, _repToken) {}
+	constructor(IDaoBase _dao, address _roboToken, address _repToken, address[] _chiefs) public 
+		Robonomika(_dao, _roboToken, _repToken, _chiefs) {}
 
 	function addNewLunchGeneric(bytes32[] _params) public {
 		string memory name = UtilsLib.bytes32ToString(_params[0]);

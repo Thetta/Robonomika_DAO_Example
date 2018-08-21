@@ -11,32 +11,32 @@ import "./RobonomikaAuto.sol";
 import "./RobonomikaWithUnpackers.sol";
 
 contract IRobonomikaFactoryZeroStage {
-	function getTokenAddress() public returns(address);
-	function getRepTokenAddress() public returns(address);
+	function getTokenAddress() public view returns(address);
+	function getRepTokenAddress() public view returns(address);
 	function transferTokenOwnerships(address _robonomika);
 }
 
 contract IRobonomikaFactoryFirstStage {
-	function getDaoBaseAddress() public returns(address);
+	function getDaoBaseAddress() public view returns(address);
 	function transferStoreOwnership(address _robonomika);
 	function setupStore() public;
 	function setupAAC(address _roboAuto) public;
 }
 
 contract RobonomikaFactoryZeroStage is IRobonomikaFactoryZeroStage {
-	StdDaoToken token;
-	StdDaoToken repToken;
+	StdDaoToken public token;
+	StdDaoToken public repToken;
 
 	constructor() public {
 		token = new StdDaoToken('roboToken', 'ROBO', 18, true, true, 10**25);
 		repToken = new StdDaoToken('repToken', 'REP', 18, true, true, 10**25);
 	}
 
-	function getTokenAddress() public returns(address) {
+	function getTokenAddress() public view returns(address) {
 		return address(token);
 	}
 
-	function getRepTokenAddress() public returns(address) {
+	function getRepTokenAddress() public view returns(address) {
 		return address(repToken);
 	}
 
@@ -56,11 +56,11 @@ contract RobonomikaFactoryFirstStage is IRobonomikaFactoryFirstStage {
 	bytes32 public FIRE_CHIEF = keccak256('fireChief');
 	bytes32 public HIRE_ADMIN = keccak256('hireAdmin');
 
-	function getDaoBaseAddress() public returns(address) {
+	function getDaoBaseAddress() public view returns(address) {
 		return address(daoBase);
 	}
 
-	function getStoreAddress() public returns(address) {
+	function getStoreAddress() public view returns(address) {
 		return address(store);
 	}
 
@@ -93,18 +93,30 @@ contract RobonomikaFactoryFirstStage is IRobonomikaFactoryFirstStage {
 }
 
 contract RobonomikaFactorySecondStage {
+	bytes32 public ADD_NEW_LUNCH = keccak256('addNewLunch');
+	bytes32 public HIRE_CHIEF = keccak256('hireChief');
+	bytes32 public FIRE_CHIEF = keccak256('fireChief');
+	bytes32 public HIRE_ADMIN = keccak256('hireAdmin');
+
 	RobonomikaAuto public roboAuto;
 	RobonomikaWithUnpackers public robonomika;
 	IRobonomikaFactoryZeroStage ZS;
 	IRobonomikaFactoryFirstStage FS;
 	
-	constructor(IRobonomikaFactoryZeroStage _ZS, IRobonomikaFactoryFirstStage _FS) public {
+	constructor(IRobonomikaFactoryZeroStage _ZS, IRobonomikaFactoryFirstStage _FS, address[] _chiefs) public {
 		ZS = _ZS;
 		FS = _FS;
 		roboAuto = new RobonomikaAuto(IDaoBase(FS.getDaoBaseAddress()));
-		robonomika = new RobonomikaWithUnpackers(IDaoBase(FS.getDaoBaseAddress()), ZS.getTokenAddress(), ZS.getRepTokenAddress());
+		robonomika = new RobonomikaWithUnpackers(IDaoBase(FS.getDaoBaseAddress()), ZS.getTokenAddress(), ZS.getRepTokenAddress(), _chiefs);
 		FS.setupStore();
 		FS.setupAAC(roboAuto);
+		uint VOTING_TYPE_SIMPLE_TOKEN = 2;
+		
+		roboAuto.setVotingParams(ADD_NEW_LUNCH, VOTING_TYPE_SIMPLE_TOKEN, bytes32(24*10), bytes32(""), bytes32(50), bytes32(50), bytes32(ZS.getTokenAddress()));
+		roboAuto.setVotingParams(HIRE_CHIEF, VOTING_TYPE_SIMPLE_TOKEN, bytes32(24*10), bytes32(""), bytes32(50), bytes32(50), bytes32(ZS.getTokenAddress()));
+		roboAuto.setVotingParams(FIRE_CHIEF, VOTING_TYPE_SIMPLE_TOKEN, bytes32(24*10), bytes32(""), bytes32(50), bytes32(50), bytes32(ZS.getTokenAddress()));
+		roboAuto.setVotingParams(HIRE_ADMIN, VOTING_TYPE_SIMPLE_TOKEN, bytes32(24*10), bytes32(""), bytes32(50), bytes32(50), bytes32(ZS.getTokenAddress()));
+		
 		ZS.transferTokenOwnerships(robonomika);
 		FS.transferStoreOwnership(robonomika);
 	}

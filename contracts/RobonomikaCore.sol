@@ -8,12 +8,12 @@ import "@thetta/core/contracts/tokens/StdDaoToken.sol";
 import "@thetta/core/contracts/utils/UtilsLib.sol";
 
 contract RobonomikaCore is DaoClient {
-	address admin;
-	address[] cookers;
-	StdDaoToken roboToken;
-	StdDaoToken repToken;
+	address public admin;
+	address[] public cookers;
+	StdDaoToken public roboToken;
+	StdDaoToken public repToken;
 	
-	uint feePercent = 10;
+	uint public feePercent = 10;
 
 	uint public ordersCount;
 	uint public lunchesCount;
@@ -24,7 +24,7 @@ contract RobonomikaCore is DaoClient {
 	mapping (address => uint) public cookerRegisrty; // cooker->date
 	mapping (address => bool) public approvedCookers; // for admin
 	
-	uint startDate;
+	uint public startDate;
 
 	event OrderIsDelivered(uint _orderId);
 
@@ -57,11 +57,15 @@ contract RobonomikaCore is DaoClient {
 		_;
 	}
 
-	constructor(IDaoBase _dao, address _roboToken, address _repToken) public DaoClient(_dao) {
+	constructor(IDaoBase _dao, address _roboToken, address _repToken, address[] _chiefs) public DaoClient(_dao) {
 		admin = msg.sender;
 		roboToken = StdDaoToken(_roboToken);
 		repToken = StdDaoToken(_repToken);
 		startDate = now;
+		for(uint i=0; i<_chiefs.length; i++){
+			cookers.push(_chiefs[i]);
+			// dao.issueTokens(repToken, _chiefs[i], 1000);
+		}
 	}
 
 // ------------ CUSTOMER CONTROLS ------------
@@ -73,15 +77,15 @@ contract RobonomikaCore is DaoClient {
 		ordersCount++;
 	}
 
-	function getLunchPriceWithFee(uint _price) public returns(uint) {
+	function getLunchPriceWithFee(uint _price) public view returns(uint) {
 		return (_price*(100+feePercent))/100;
 	}
 
-	function getLunchFee(uint _price) public returns(uint) {
+	function getLunchFee(uint _price) public view returns(uint) {
 		return (_price*(feePercent))/100;
 	}
 
-	function getOrderStatus(uint _orderId) public returns(OrderState) {
+	function getOrderStatus(uint _orderId) public view returns(OrderState) {
 		uint lunchId = orders[_orderId].lunch.id;
 		return orders[_orderId].state;
 	}
@@ -154,26 +158,26 @@ contract RobonomikaCore is DaoClient {
 		lunchesCount++;
 	}
 
-	function getMyOrder(uint _orderId) public { // for smartLock
+	function getMyOrder(uint _orderId) public {  // for smartLock
 		Order order = orders[_orderId];
 		require(order.customer==msg.sender);
 		require(order.state==OrderState.Delivered);
 		order.state==OrderState.Open;
 	}
 
-	function getLunchInfo(uint _lunchId) public returns(string name, uint price, address cooker) { // for smartLock
+	function getLunchInfo(uint _lunchId) public view returns(string name, uint price, address cooker) {  // for smartLock
 		Lunch lunch = lunches[_lunchId];
 		name = lunch.name;
 		price = getLunchPriceWithFee(lunch.price);
 		cooker = lunch.cooker;
 	}
 
-	function getLunchesCount(uint _lunchId) public returns(uint) {
+	function getLunchesCount(uint _lunchId) public view returns(uint) {
 		return lunchesCount;
 	}
 
 // ------------ CHIEF CONTROLS ------------
-	function getAllOpenedOrders() public returns(uint[]) {
+	function getAllOpenedOrders() public view returns (uint[]) {
 		uint[] openOrders;
 		for(uint i=0; i<ordersCount; i++){
 			if(orders[i].state==OrderState.Cooking){

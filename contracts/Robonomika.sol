@@ -12,14 +12,14 @@ contract Robonomika is RobonomikaCore {
 	bytes32 public FIRE_CHIEF = keccak256('fireChief');
 	bytes32 public HIRE_ADMIN = keccak256('hireAdmin');
 
-	constructor(IDaoBase _dao, address _roboToken, address _repToken) public RobonomikaCore(_dao, _roboToken, _repToken) {
+	constructor(IDaoBase _dao, address _roboToken, address _repToken, address[] _chiefs) public RobonomikaCore(_dao, _roboToken, _repToken, _chiefs) {
 	}
 
 	function addNewLunch(string _name, uint _price, address _cooker) public isCanDo(ADD_NEW_LUNCH){
 		super.addNewLunch(_name, _price, _cooker);
 	}
 
-	function hireChief(address _cooker) public isApprovedByAdmin(_cooker)isCanDo(HIRE_CHIEF){
+	function hireChief(address _cooker) public isApprovedByAdmin(_cooker) isCanDo(HIRE_CHIEF){
 		super.hireChief(_cooker);
 	}
 
