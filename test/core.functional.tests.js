@@ -31,10 +31,10 @@ contract('RobonomikaCore functional', (accounts) => {
 		repToken = await StdDaoToken.new('repToken', 'REP', 18, true, true, 1000000000);
 		store = await DaoStorage.new([token.address, repToken.address]);
 		daoBase = await DaoBase.new(store.address);
-		robonomicaCore = await Robonomika.new(daoBase.address, token.address, repToken.address);
-		await token.transferOwnership(robonomicaCore.address);
-		await repToken.transferOwnership(robonomicaCore.address);
-		await store.transferOwnership(robonomicaCore.address);
+		robonomika = await Robonomika.new(daoBase.address, token.address, repToken.address);
+		await token.transferOwnership(robonomika.address);
+		await repToken.transferOwnership(robonomika.address);
+		await store.transferOwnership(robonomika.address);
 	});
 
 
