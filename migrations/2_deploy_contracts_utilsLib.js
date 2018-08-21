@@ -7,13 +7,15 @@ var VotingLib = artifacts.require("./VotingLib");
 var DaoBaseAuto = artifacts.require("./DaoBaseAuto");
 var StdDaoToken = artifacts.require("./StdDaoToken");
 var DaoStorage = artifacts.require("./DaoStorage");
-var RobonomicaCore = artifacts.require("./RobonomicaCore");
+var RobonomikaCore = artifacts.require("./RobonomikaCore");
+var Robonomika = artifacts.require("./Robonomika");
 
 module.exports = function (deployer) {
 	deployer.deploy(UtilsLib).then(() => {
 		// deployer.link(UtilsLib, DaoBaseWithUnpackers);
 		deployer.link(UtilsLib, GenericCaller);
-		deployer.link(UtilsLib, RobonomicaCore);
+		deployer.link(UtilsLib, RobonomikaCore);
+		deployer.link(UtilsLib, Robonomika);
 		deployer.link(UtilsLib, DaoBaseAuto);
 		deployer.link(UtilsLib, DaoStorage);
 		deployer.link(UtilsLib, VotingLib);

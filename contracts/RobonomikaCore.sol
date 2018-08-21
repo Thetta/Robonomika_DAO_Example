@@ -7,7 +7,7 @@ import "@thetta/core/contracts/DaoClient.sol";
 import "@thetta/core/contracts/tokens/StdDaoToken.sol";
 import "@thetta/core/contracts/utils/UtilsLib.sol";
 
-contract RobonomicaCore is DaoClient {
+contract RobonomikaCore is DaoClient {
 	address admin;
 	address[] cookers;
 	StdDaoToken roboToken;
@@ -50,11 +50,6 @@ contract RobonomicaCore is DaoClient {
 		Delivered,
 		Open,
 		Finished
-	}
-
-	modifier adminOnly(){
-		require(msg.sender==admin); 
-		_; 
 	}
 
 	modifier isApprovedByAdmin(address _cooker){
@@ -153,9 +148,8 @@ contract RobonomicaCore is DaoClient {
 		}
 	}
 
-	function addNewLunch(string _name, uint _price, uint _cookerId) public { // if 30% votes => add
-		address cooker = cookers[_cookerId];
-		lunches[lunchesCount] = Lunch(_name, lunchesCount, _price, cooker);
+	function addNewLunch(string _name, uint _price, address _cooker) public { // if 30% votes => add
+		lunches[lunchesCount] = Lunch(_name, lunchesCount, _price, _cooker);
 		dao.issueTokens(repToken, msg.sender, 1000);
 		lunchesCount++;
 	}
@@ -190,12 +184,14 @@ contract RobonomicaCore is DaoClient {
 	}
 
 	function setThatOrderIsDelivered(uint _orderId) public {
-		emit OrderIsDelivered(_orderId);
+		require(msg.sender==orders[_orderId].lunch.cooker);
 		orders[_orderId].state = OrderState.Delivered;
+		emit OrderIsDelivered(_orderId);
 	}
 
 // ------------ ADMIN CONTROLS ------------
-	function approveCooker(address _cooker) public adminOnly{
+	function approveCooker(address _cooker) public {
+		require(msg.sender==admin);
 		require(cookerRegisrty[_cooker]-now<10 days);
 		approvedCookers[_cooker] = true;
 		hireChief(_cooker);
