@@ -57,10 +57,10 @@ contract RobonomikaCore is DaoClient {
 		_;
 	}
 
-	constructor(IDaoBase _dao, StdDaoToken _roboToken, StdDaoToken _repToken) public DaoClient(_dao) {
+	constructor(IDaoBase _dao, address _roboToken, address _repToken) public DaoClient(_dao) {
 		admin = msg.sender;
-		roboToken = _roboToken;
-		repToken = _repToken;
+		roboToken = StdDaoToken(_roboToken);
+		repToken = StdDaoToken(_repToken);
 		startDate = now;
 	}
 

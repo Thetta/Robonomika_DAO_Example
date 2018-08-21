@@ -8,7 +8,7 @@ import "./Robonomika.sol";
 
 contract RobonomikaWithUnpackers is Robonomika {
 
-	constructor(IDaoBase _dao, StdDaoToken _roboToken, StdDaoToken _repToken) public 
+	constructor(IDaoBase _dao, address _roboToken, address _repToken) public 
 		Robonomika(_dao, _roboToken, _repToken) {}
 
 	function addNewLunchGeneric(bytes32[] _params) public {
