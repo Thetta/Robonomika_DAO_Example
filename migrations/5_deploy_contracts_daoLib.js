@@ -2,15 +2,18 @@ var DaoBaseLib = artifacts.require("./DaoBaseLib");
 var DaoBase = artifacts.require("./DaoBase");
 var RobonomikaCore = artifacts.require("./RobonomikaCore");
 var Robonomika = artifacts.require("./Robonomika");
-// var DaoBaseWithUnpackers = artifacts.require("./DaoBaseWithUnpackers");
+var RobonomikaAuto = artifacts.require("./RobonomikaAuto");
+var RobonomikaWithUnpackers = artifacts.require("./RobonomikaWithUnpackers");
+var DaoBaseWithUnpackers = artifacts.require("./DaoBaseWithUnpackers");
 
 module.exports = function (deployer) {
 	deployer.deploy(DaoBaseLib).then(() => {
 		deployer.link(DaoBaseLib, DaoBase);
 		deployer.link(DaoBaseLib, RobonomikaCore);
 		deployer.link(DaoBaseLib, Robonomika);
-		
-		// deployer.link(DaoLib, DaoBaseWithUnpackers);
+		deployer.link(DaoBaseLib, RobonomikaWithUnpackers);
+		deployer.link(DaoBaseLib, RobonomikaAuto);
+		deployer.link(DaoBaseLib, DaoBaseWithUnpackers);
 	});
 };
 

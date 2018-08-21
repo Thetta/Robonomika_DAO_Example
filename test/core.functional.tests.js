@@ -9,6 +9,8 @@ const DaoBaseAuto = artifacts.require("DaoBaseAuto");
 const DaoBase = artifacts.require("DaoBase");
 const RobonomikaCore = artifacts.require("RobonomikaCore");
 const Robonomika = artifacts.require("Robonomika");
+const RobonomikaWithUnpackers = artifacts.require("RobonomikaWithUnpackers");
+const RobonomikaAuto = artifacts.require("RobonomikaAuto");
 
 contract('RobonomikaCore functional', (accounts) => {
 	const integrator = accounts[0];
@@ -25,13 +27,15 @@ contract('RobonomikaCore functional', (accounts) => {
 	let informalProposal;
 	let stdDaoToken;
 	let daoBase;
+	let roboAuto;
 
 	beforeEach(async () => {
 		token = await StdDaoToken.new('roboToken', 'ROBO', 18, true, true, 1000000000);
 		repToken = await StdDaoToken.new('repToken', 'REP', 18, true, true, 1000000000);
 		store = await DaoStorage.new([token.address, repToken.address]);
 		daoBase = await DaoBase.new(store.address);
-		robonomika = await Robonomika.new(daoBase.address, token.address, repToken.address);
+		roboAuto = await RobonomikaAuto.new(daoBase.address);
+		robonomika = await RobonomikaWithUnpackers.new(daoBase.address, token.address, repToken.address);
 		await token.transferOwnership(robonomika.address);
 		await repToken.transferOwnership(robonomika.address);
 		await store.transferOwnership(robonomika.address);
