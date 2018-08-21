@@ -45,13 +45,13 @@ contract('RobonomikaCore functional', (accounts) => {
 		// await token.transferOwnership(robonomika.address);
 		// await repToken.transferOwnership(robonomika.address);
 		// await store.transferOwnership(robonomika.address);
-		roboZeroStage = await RobonomikaFactoryZeroStage.new()
-		roboFirstStage = await RobonomikaFactoryFirstStage.new(roboZeroStage.address);
-		roboSecondStage = await RobonomikaFactorySecondStage.new(roboZeroStage.address, roboFirstStage.address);
+		roboZeroStage = await RobonomikaFactoryZeroStage.new({gas:1e12, gasPrice:1});
+		roboFirstStage = await RobonomikaFactoryFirstStage.new(roboZeroStage.address, {gas:1e12, gasPrice:1});
+		roboSecondStage = await RobonomikaFactorySecondStage.new(roboZeroStage.address, roboFirstStage.address, {gas:1e12, gasPrice:1});
 	});
 
 
-	describe('finc1()', ()=> {
+	describe('func1()', ()=> {
 		it('should', async () => {
 			// await 
 		});

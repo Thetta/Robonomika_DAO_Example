@@ -19,6 +19,8 @@ contract IRobonomikaFactoryZeroStage {
 contract IRobonomikaFactoryFirstStage {
 	function getDaoBaseAddress() public returns(address);
 	function transferStoreOwnership(address _robonomika);
+	function setupStore() public;
+	function setupAAC(address _roboAuto) public;
 }
 
 contract RobonomikaFactoryZeroStage is IRobonomikaFactoryZeroStage {
@@ -47,7 +49,13 @@ contract RobonomikaFactoryZeroStage is IRobonomikaFactoryZeroStage {
 contract RobonomikaFactoryFirstStage is IRobonomikaFactoryFirstStage {
 	DaoStorage store;
 	DaoBase daoBase;
+	IRobonomikaFactoryZeroStage ZS;
 	
+	bytes32 public ADD_NEW_LUNCH = keccak256('addNewLunch');
+	bytes32 public HIRE_CHIEF = keccak256('hireChief');
+	bytes32 public FIRE_CHIEF = keccak256('fireChief');
+	bytes32 public HIRE_ADMIN = keccak256('hireAdmin');
+
 	function getDaoBaseAddress() public returns(address) {
 		return address(daoBase);
 	}
@@ -58,10 +66,25 @@ contract RobonomikaFactoryFirstStage is IRobonomikaFactoryFirstStage {
 
 	constructor(IRobonomikaFactoryZeroStage _ZS) public {
 		address[] tokens;
-		tokens.push(_ZS.getTokenAddress());
-		tokens.push(_ZS.getRepTokenAddress());
+		ZS = _ZS;
+		tokens.push(ZS.getTokenAddress());
+		tokens.push(ZS.getRepTokenAddress());
 		store = new DaoStorage(tokens);
 		daoBase = new DaoBase(store);	
+	}
+
+	function setupStore() public {
+		store.allowActionByVoting(ADD_NEW_LUNCH, ZS.getTokenAddress());
+		store.allowActionByVoting(HIRE_CHIEF, ZS.getTokenAddress());
+		store.allowActionByVoting(FIRE_CHIEF, ZS.getTokenAddress());
+		store.allowActionByVoting(HIRE_ADMIN, ZS.getTokenAddress());		
+	}
+
+	function setupAAC(address _roboAuto) public {
+		store.allowActionByAddress(ADD_NEW_LUNCH, _roboAuto);
+		store.allowActionByAddress(HIRE_CHIEF, _roboAuto);
+		store.allowActionByAddress(FIRE_CHIEF, _roboAuto);
+		store.allowActionByAddress(HIRE_ADMIN, _roboAuto);
 	}
 
 	function transferStoreOwnership(address _robonomika) {
@@ -72,13 +95,17 @@ contract RobonomikaFactoryFirstStage is IRobonomikaFactoryFirstStage {
 contract RobonomikaFactorySecondStage {
 	RobonomikaAuto public roboAuto;
 	RobonomikaWithUnpackers public robonomika;
+	IRobonomikaFactoryZeroStage ZS;
+	IRobonomikaFactoryFirstStage FS;
 	
 	constructor(IRobonomikaFactoryZeroStage _ZS, IRobonomikaFactoryFirstStage _FS) public {
-		roboAuto = new RobonomikaAuto(IDaoBase(_FS.getDaoBaseAddress()));
-		robonomika = new RobonomikaWithUnpackers(IDaoBase(_FS.getDaoBaseAddress()), _ZS.getTokenAddress(), _ZS.getRepTokenAddress());
+		ZS = _ZS;
+		FS = _FS;
+		roboAuto = new RobonomikaAuto(IDaoBase(FS.getDaoBaseAddress()));
+		robonomika = new RobonomikaWithUnpackers(IDaoBase(FS.getDaoBaseAddress()), ZS.getTokenAddress(), ZS.getRepTokenAddress());
+		FS.setupStore();
+		FS.setupAAC(roboAuto);
+		ZS.transferTokenOwnerships(robonomika);
+		FS.transferStoreOwnership(robonomika);
 	}
 }
-
-// contract RobonomikaFactoryThirdStage {
-
-// }
