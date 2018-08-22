@@ -19,7 +19,7 @@ contract Robonomika is RobonomikaCore {
 		super.addNewLunch(_name, _price, _cooker);
 	}
 
-	function hireChief(address _cooker) public isApprovedByAdmin(_cooker) isCanDo(HIRE_CHIEF){
+	function hireChief(address _cooker) public  isCanDo(HIRE_CHIEF){
 		super.hireChief(_cooker);
 	}
 

@@ -198,7 +198,6 @@ contract RobonomikaCore is DaoClient {
 		require(msg.sender==admin);
 		require(cookerRegisrty[_cooker]-now<10 days);
 		approvedCookers[_cooker] = true;
-		hireChief(_cooker);
 	}
 
 
@@ -208,7 +207,7 @@ contract RobonomikaCore is DaoClient {
 		cookerRegisrty[msg.sender] = now;
 	}
 
-	function hireChief(address _cooker) public isApprovedByAdmin(_cooker){
+	function hireChief(address _cooker) public {
 		cookers.push(_cooker);
 	}
 

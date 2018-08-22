@@ -8,9 +8,8 @@ var RobonomikaWithUnpackers = artifacts.require("./RobonomikaWithUnpackers");
 var DaoBaseWithUnpackers = artifacts.require("./DaoBaseWithUnpackers");
 var StdDaoToken = artifacts.require("./StdDaoToken");
 // var StdDaoToken2 = artifacts.require("./StdDaoToken");
-
-module.exports =  function (deployer, network, accounts) { 
-	var token, repToken, store, daoBase, roboAuto, robonomika;
+var token, repToken, store, daoBase, roboAuto, robonomika;
+module.exports = function (deployer, network, accounts) { 
 	deployer.then(function() {
 		return StdDaoToken.new('roboToken', 'ROBO', 18, true, true, 1000000000,{overwrite:true});
 	}).then(function(instance) {
